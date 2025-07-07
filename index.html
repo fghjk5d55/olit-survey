@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLIT Vape Survey & Lucky Draw</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 添加 EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <style>
+        /* 保持原有CSS不变 */
+        :root {
+            --primary-color: #4a6bff;
+            --secondary-color: #ff6b6b;
+            --dark-color: #2c3e50;
+            --light-color: #f8f9fa;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f7ff;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+        
+        /* 其余CSS保持不变... */
+    </style>
+</head>
+<body>
+    <!-- 保持原有HTML结构不变 -->
+    <div class="container">
+        <header>
+            <img src="https://via.placeholder.com/150x50?text=OLIT+Logo" alt="OLIT Logo" class="logo">
+            <h1>OLIT Vape Survey & Lucky Draw</h1>
+            <p class="subtitle">Share your feedback and get a chance to win exciting prizes!</p>
+        </header>
+        
+        <div id="formSection">
+            <form id="surveyForm" class="form-container">
+                <!-- 保持原有表单字段不变... -->
+            </form>
+        </div>
+        
+        <div id="resultSection" class="result-container">
+            <!-- 结果展示区域保持不变... -->
+        </div>
+        
+        <div id="closedSection" class="closed-message">
+            <!-- 关闭提示保持不变... -->
+        </div>
+        
+        <footer>
+            <p>© 2025 OLIT Vapes. All rights reserved.</p>
+            <p>Survey closes at 11:59 PM EST on July 31, 2025</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化EmailJS（使用您提供的Public Key）
+        emailjs.init('mj_XzcWECPBPp-vZC');
+
+        // 配置参数
+        const MAX_PARTICIPANTS = 100;
+        const WINNERS_COUNT = 3;
+        const END_DATE = new Date('July 31, 2025 23:59:00 EST');
+        
+        // 跟踪参与者和获奖者
+        let participants = JSON.parse(localStorage.getItem('olit_participants')) || [];
+        let winners = JSON.parse(localStorage.getItem('olit_winners')) || [];
+        
+        // 获取DOM元素
+        const form = document.getElementById('surveyForm');
+        const formSection = document.getElementById('formSection');
+        const resultSection = document.getElementById('resultSection');
+        const resultContent = document.getElementById('resultContent');
+        const closedSection = document.getElementById('closedSection');
+        const participantCounts = document.querySelectorAll('.counter span');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        
+        // 检查活动状态
+        function checkCampaignStatus() {
+            const now = new Date();
+            const isClosed = now > END_DATE || participants.length >= MAX_PARTICIPANTS;
+            
+            if (isClosed) {
+                formSection.style.display = 'none';
+                resultSection.style.display = 'none';
+                closedSection.style.display = 'block';
+                return true;
+            }
+            return false;
+        }
+        
+        // 更新参与者计数
+        function updateParticipantCount() {
+            participantCounts.forEach(el => {
+                el.textContent = participants.length;
+            });
+        }
+        
+        // 创建庆祝效果
+        function createConfetti() {
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.width = Math.random() * 10 + 5 + 'px';
+                confetti.style.height = Math.random() * 10 + 5 + 'px';
+                confetti.style.animationDuration = Math.random() * 2 + 2 + 's';
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 3000);
+            }
+        }
+        
+        // 检查是否中奖
+        function checkWinner(userId) {
+            if (winners.length < WINNERS_COUNT) {
+                const chance = WINNERS_COUNT / Math.max(MAX_PARTICIPANTS - participants.length + 1, WINNERS_COUNT);
+                if (Math.random() < chance) {
+                    winners.push(userId);
+                    localStorage.setItem('olit_winners', JSON.stringify(winners));
+                    return true;
+                }
+            }
+            return winners.includes(userId);
+        }
+        
+        // 使用EmailJS发送邮件
+        async function sendEmail(formData) {
+            try {
+                const response = await emailjs.send(
+                    'service_mtjey4p',       // 您的Service ID
+                    'template_ieuts95',      // 您的Template ID
+                    {
+                        name: formData.get('name'),
+                        country: formData.get('country'),
+                        phone: formData.get('phone'),
+                        products: formData.get('products'),
+                        flavors: formData.get('flavors'),
+                        reply_to: 'optimum1346@gmail.com'  // 接收回复的邮箱
+                    }
+                );
+                return response.status === 200;
+            } catch (error) {
+                console.error('邮件发送失败:', error);
+                return false;
+            }
+        }
+        
+        // 表单提交处理
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (checkCampaignStatus()) return;
+            
+            // 显示加载指示器
+            loadingIndicator.style.display = 'block';
+            form.querySelector('.submit-btn').disabled = true;
+            
+            // 创建用户对象
+            const formData = new FormData(form);
+            const user = {
+                id: Date.now().toString(),
+                name: formData.get('name'),
+                country: formData.get('country'),
+                phone: formData.get('phone'),
+                products: formData.get('products'),
+                flavors: formData.get('flavors'),
+                timestamp: new Date().toISOString()
+            };
+            
+            // 尝试发送邮件
+            const emailSent = await sendEmail(formData);
+            
+            if (!emailSent) {
+                alert('提交失败，请重试或联系客服。');
+                loadingIndicator.style.display = 'none';
+                form.querySelector('.submit-btn').disabled = false;
+                return;
+            }
+            
+            // 添加到参与者列表
+            participants.push(user.id);
+            localStorage.setItem('olit_participants', JSON.stringify(participants));
+            updateParticipantCount();
+            
+            // 检查是否中奖
+            const isWinner = checkWinner(user.id);
+            
+            // 显示结果
+            loadingIndicator.style.display = 'none';
+            formSection.style.display = 'none';
+            resultSection.style.display = 'block';
+            
+            if (isWinner) {
+                resultContent.innerHTML = `
+                    <div class="result-icon winner">🎉</div>
+                    <h2 class="winner">恭喜您中奖了！</h2>
+                    <p>您是我们的幸运获奖者之一！</p>
+                    <p>客服将在3个工作日内联系您发放奖品。</p>
+                `;
+                createConfetti();
+            } else {
+                resultContent.innerHTML = `
+                    <div class="result-icon not-winner">👍</div>
+                    <h2 class="not-winner">感谢参与！</h2>
+                    <p>我们已收到您的反馈。</p>
+                    <p>虽然本次未中奖，请继续关注我们后续活动！</p>
+                `;
+            }
+            
+            // 检查是否达到人数上限
+            if (participants.length >= MAX_PARTICIPANTS) {
+                setTimeout(() => {
+                    closedSection.style.display = 'block';
+                    resultSection.style.display = 'none';
+                }, 5000);
+            }
+        });
+        
+        // 初始化
+        updateParticipantCount();
+        checkCampaignStatus();
+    </script>
+</body>
+</html>
